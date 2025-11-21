@@ -154,9 +154,27 @@ const App: React.FC = () => {
         
         {/* Error Banner */}
         {processingState.error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <p>{processingState.error}</p>
+          <div className={`mb-6 px-4 py-3 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2 ${
+            processingState.error.toLowerCase().includes('quota') || processingState.error.toLowerCase().includes('limit')
+              ? 'bg-amber-50 border border-amber-200 text-amber-800'
+              : 'bg-red-50 border border-red-200 text-red-700'
+          }`}>
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-medium mb-1">{processingState.error.split('.')[0]}.</p>
+              {processingState.error.includes('http') && (
+                <p className="text-sm mt-2">
+                  <a 
+                    href="https://ai.google.dev/pricing" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="underline hover:text-amber-900 font-medium"
+                  >
+                    View pricing and upgrade options →
+                  </a>
+                </p>
+              )}
+            </div>
           </div>
         )}
 

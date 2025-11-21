@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Share2, Sparkles, RefreshCw } from 'lucide-react';
+import { Download, Sparkles, RefreshCw } from 'lucide-react';
 import { Button } from './Button';
 
 interface ResultDisplayProps {

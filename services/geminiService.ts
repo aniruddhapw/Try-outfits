@@ -80,6 +80,58 @@ export const editImageWithGemini = async (
 
   } catch (error: any) {
     console.error("Gemini API Error:", error);
-    throw new Error(error.message || "Failed to edit image using Gemini.");
+    
+    // Extract error details (handle both direct and nested error structures)
+    const errorObj = error.error || error;
+    const errorCode = errorObj.code || error.code;
+    const errorStatus = errorObj.status || error.status;
+    const errorMessage = errorObj.message || error.message || '';
+    const errorDetails = errorObj.details || error.details || [];
+    
+    // Handle quota/rate limit errors specifically
+    if (errorCode === 429 || errorStatus === 'RESOURCE_EXHAUSTED' || errorMessage.includes('quota') || errorMessage.includes('Quota exceeded')) {
+      const errorMessage = error.message || '';
+      let retryAfter = null;
+      
+      // Try to extract retry delay from error details
+      if (errorDetails && errorDetails.length > 0) {
+        for (const detail of errorDetails) {
+          if (detail['@type'] === 'type.googleapis.com/google.rpc.RetryInfo' && detail.retryDelay) {
+            retryAfter = detail.retryDelay;
+            break;
+          }
+        }
+      }
+      
+      // Parse retry delay if it's in seconds format like "52s" or "52.88s"
+      if (retryAfter) {
+        const seconds = parseFloat(retryAfter.replace('s', ''));
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = Math.ceil(seconds % 60);
+        
+        if (minutes > 0) {
+          throw new Error(
+            `API quota exceeded. You've reached the free tier limit. Please wait ${minutes} minute${minutes > 1 ? 's' : ''} ${remainingSeconds > 0 ? `and ${remainingSeconds} second${remainingSeconds > 1 ? 's' : ''}` : ''} before trying again, or upgrade your plan at https://ai.google.dev/pricing`
+          );
+        } else {
+          throw new Error(
+            `API quota exceeded. Please wait ${Math.ceil(seconds)} second${Math.ceil(seconds) > 1 ? 's' : ''} before trying again, or upgrade your plan at https://ai.google.dev/pricing`
+          );
+        }
+      }
+      
+      throw new Error(
+        `API quota exceeded. You've reached the free tier limit. Please wait a few minutes before trying again, or upgrade your plan at https://ai.google.dev/pricing`
+      );
+    }
+    
+    // Handle other API errors
+    if (errorMessage && errorMessage.includes('quota')) {
+      throw new Error(
+        `API quota exceeded. You've reached the free tier limit. Please wait a few minutes before trying again, or upgrade your plan at https://ai.google.dev/pricing`
+      );
+    }
+    
+    throw new Error(errorMessage || "Failed to edit image using Gemini.");
   }
 };
